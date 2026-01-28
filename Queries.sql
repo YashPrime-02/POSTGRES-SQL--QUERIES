@@ -401,6 +401,562 @@ ORDER BY salary DESC;
 
 
 
+-- ======================================
+-- BASIC SELECT (READ DATA)
+-- ======================================
+
+-- Select ALL columns and ALL rows from employees table
+SELECT * FROM employees;
+
+
+-- ======================================
+-- WHERE : FILTER DATA
+-- ======================================
+
+-- Get employees who work in IT department
+SELECT * FROM employees
+WHERE dept = 'IT';
+
+-- Get employees whose salary is more than 50000
+SELECT * FROM employees
+WHERE salary > 50000;
+
+-- Get employees hired after 2020
+SELECT * FROM employees
+WHERE hire_date > '2020-01-01';
+
+-- Get employees from IT department AND salary greater than 50000
+SELECT * FROM employees
+WHERE dept = 'IT' AND salary > 50000;
+
+-- Get employees who are NOT from HR department
+SELECT * FROM employees
+WHERE dept != 'HR';
+
+-- Get employees whose department is not assigned (NULL)
+SELECT * FROM employees
+WHERE dept IS NULL;
+
+
+-- ======================================
+-- IN OPERATOR : MULTIPLE VALUES FILTER
+-- ======================================
+
+-- IN is used when we want to match a column
+-- against multiple values (OR condition made easy)
+
+-- Employees working in IT or HR department
+SELECT * FROM employees
+WHERE dept IN ('IT', 'HR');
+-- Same as:
+-- WHERE dept = 'IT' OR dept = 'HR'
+
+
+-- Employees whose salary is either 45000 or 50000
+SELECT * FROM employees
+WHERE salary IN (45000, 50000);
+
+
+-- ======================================
+-- NOT IN OPERATOR : EXCLUDE VALUES
+-- ======================================
+
+-- NOT IN is used to EXCLUDE multiple values
+
+-- Employees who are NOT in IT or HR department
+SELECT * FROM employees
+WHERE dept NOT IN ('IT', 'HR');
+
+
+-- Employees whose salary is NOT 45000 or 50000
+SELECT * FROM employees
+WHERE salary NOT IN (45000, 50000);
+
+
+-- ======================================
+-- BETWEEN OPERATOR : RANGE FILTER
+-- ======================================
+
+-- BETWEEN is used to filter values within a RANGE
+-- It INCLUDES both start and end values (inclusive)
+
+-- Employees with salary between 45000 and 55000
+SELECT * FROM employees
+WHERE salary BETWEEN 45000 AND 55000;
+-- means: >= 45000 AND <= 55000
+
+
+-- Employees hired between 2019 and 2021
+SELECT * FROM employees
+WHERE hire_date BETWEEN '2019-01-01' AND '2021-12-31';
+
+
+-- ======================================
+-- NOT BETWEEN OPERATOR : EXCLUDE RANGE
+-- ======================================
+
+-- NOT BETWEEN is used to EXCLUDE a range of values
+
+-- Employees with salary NOT between 45000 and 55000
+SELECT * FROM employees
+WHERE salary NOT BETWEEN 45000 AND 55000;
+
+
+-- Employees hired NOT between 2019 and 2021
+SELECT * FROM employees
+WHERE hire_date NOT BETWEEN '2019-01-01' AND '2021-12-31';
+
+
+
+-- ======================================
+-- DISTINCT : REMOVE DUPLICATES
+-- ======================================
+
+-- Get unique department names (no duplicates)
+SELECT DISTINCT dept FROM employees;
+
+-- Get unique salary values
+SELECT DISTINCT salary FROM employees;
+
+-- Get unique combinations of department and salary
+SELECT DISTINCT dept, salary
+FROM employees;
+
+
+-- ======================================
+-- ORDER BY : SORT DATA
+-- ======================================
+
+-- Sort employees by salary (low to high)
+SELECT * FROM employees
+ORDER BY salary ASC;
+
+-- Sort employees by salary (high to low)
+SELECT * FROM employees
+ORDER BY salary DESC;
+
+-- Sort employees by hire date (oldest first)
+SELECT * FROM employees
+ORDER BY hire_date ASC;
+
+-- Sort employees by department first, then salary (highest first)
+SELECT * FROM employees
+ORDER BY dept, salary DESC;
+
+
+-- ======================================
+-- LIMIT : RESTRICT NUMBER OF ROWS
+-- ======================================
+
+-- Show only first 5 employees
+SELECT * FROM employees
+LIMIT 5;
+
+-- Show top 3 highest paid employees
+SELECT * FROM employees
+ORDER BY salary DESC
+LIMIT 3;
+
+-- Show latest 2 hired employees
+SELECT * FROM employees
+ORDER BY hire_date DESC
+LIMIT 2;
+
+
+
+
+
+-- ======================================
+-- LIKE : PATTERN MATCHING (TEXT SEARCH)
+-- ======================================
+
+-- Find employees whose first name starts with 'A'
+SELECT * FROM employees
+WHERE fname LIKE 'A%';
+
+-- Find employees whose first name ends with 'a'
+SELECT * FROM employees
+WHERE fname LIKE '%a';
+
+-- Find employees whose email contains 'example'
+SELECT * FROM employees
+WHERE email LIKE '%example%';
+
+-- Find employees whose first name has exactly 5 letters
+SELECT * FROM employees
+WHERE fname LIKE '_____';
+
+--  Find employees whose first name has exactly 4 letters and 'a' as second letter
+SELECT * FROM employees
+WHERE fname LIKE '_a__';
+
+
+-- Find employees whose:
+-- 1. First name has 'a' as the SECOND letter
+-- 2. First name ENDS with 'h'
+
+SELECT * FROM employees
+WHERE fname LIKE '_a%h';
+
+
+-- Case-insensitive search (PostgreSQL special)
+-- Find names starting with 'p' or 'P'
+SELECT * FROM employees
+WHERE fname ILIKE 'p%';
+
+
+-- ======================================
+-- COMBINED REAL-WORLD QUERIES
+-- ======================================
+
+-- Top 3 highest paid employees from IT department
+SELECT * FROM employees
+WHERE dept = 'IT'
+ORDER BY salary DESC
+LIMIT 3;
+
+-- Unique departments where employees were hired after 2019
+SELECT DISTINCT dept
+FROM employees
+WHERE hire_date > '2019-01-01';
+
+-- Employees whose name starts with 'R' and salary above 50000
+SELECT * FROM employees
+WHERE fname LIKE 'R%' AND salary > 50000;
+
+
+-- ======================================
+-- QUICK CHECK QUERIES
+-- ======================================
+
+-- Count total number of employees
+SELECT COUNT(*) FROM employees;
+
+-- Count employees per department
+SELECT dept, COUNT(*)
+FROM employees
+GROUP BY dept;
+
+-- ======================================
+-- AGGREGATE FUNCTIONS : SUM, AVG, MAX, MIN
+-- ======================================
+
+
+-- ----------------------
+-- MAX : Highest value
+-- ----------------------
+
+-- Highest salary in the company
+SELECT MAX(salary) 
+FROM employees;
+
+
+-- Get the first name of employee(s)
+-- who have the HIGHEST salary in the company
+
+SELECT fname
+FROM employees
+WHERE salary = (
+    SELECT MAX(salary)
+    FROM employees
+);
+
+-- Explanation:
+-- 1. Inner query finds the maximum salary in the table
+-- 2. Outer query finds employee(s) whose salary equals that max value
+
+
+-- ----------------------
+-- MIN : Lowest value
+-- ----------------------
+
+-- Lowest salary in the company
+SELECT MIN(salary) 
+FROM employees;
+
+
+-- ----------------------
+-- SUM : Total value
+-- ----------------------
+
+-- Total salary paid to all employees
+SELECT SUM(salary) 
+FROM employees;
+
+-- Total salary paid to IT department only
+SELECT SUM(salary)
+FROM employees
+WHERE dept = 'IT';
+
+
+-- ----------------------
+-- AVG : Average value
+-- ----------------------
+
+-- Average salary of all employees
+SELECT AVG(salary)
+FROM employees;
+
+-- Average salary of HR department
+SELECT AVG(salary)
+FROM employees
+WHERE dept = 'HR';
+
+
+-- ======================================
+-- AGGREGATES WITH GROUP BY
+-- ======================================
+
+-- List of departments (unique)
+SELECT dept from employees GROUP BY dept;
+
+-- Count of employees in each department
+SELECT dept,COUNT(emp_id) from employees GROUP BY dept;
+
+-- SUM of salaries in each department
+SELECT dept,SUM(salary) from employees GROUP BY dept;
+
+
+-- Group by department
+-- and calculate average salary for each department
+
+SELECT dept, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY dept;
+
+
+-- Highest salary in each department
+SELECT dept, MAX(salary)
+FROM employees
+GROUP BY dept;
+
+-- Lowest salary in each department
+SELECT dept, MIN(salary)
+FROM employees
+GROUP BY dept;
+
+-- Total salary per department
+SELECT dept, SUM(salary)
+FROM employees
+GROUP BY dept;
+
+-- Average salary per department
+SELECT dept, AVG(salary)
+FROM employees
+GROUP BY dept;
+
+
+-- ======================================
+-- REAL-WORLD COMBINATION EXAMPLES
+-- ======================================
+
+-- Departments where average salary is greater than 50000
+-- HAVING is used to filter aggregated results
+SELECT dept, AVG(salary)
+FROM employees
+GROUP BY dept
+HAVING AVG(salary) > 50000;
+
+
+-- IT department salary stats
+SELECT 
+    MAX(salary) AS highest_salary,
+    MIN(salary) AS lowest_salary,
+    AVG(salary) AS average_salary,
+    SUM(salary) AS total_salary
+FROM employees
+WHERE dept = 'IT';
+
+
+-- ======================================
+-- STRING FUNCTION QUERIES (employees DB)
+-- ======================================
+
+
+-- 1. CONCAT : Combine first name and last name
+SELECT CONCAT(fname, ' ', lname) AS full_name
+FROM employees;
+
+
+-- 2. CONCAT_WS : Combine multiple columns with separator
+SELECT CONCAT_WS( ' - ', fname, lname, email) AS employee_details, dept
+FROM employees;
+
+
+-- 2.5 Example with emp_id = 1
+SELECT CONCAT_WS( ' : ', fname, lname) AS employee_details, email, dept,salary
+FROM employees WHERE emp_id =1;
+
+
+-- 3. SUBSTR : Get first 3 letters of first name
+SELECT fname,
+       SUBSTR(fname, 1, 3) AS short_name
+FROM employees;
+
+
+-- 4. LEFT : Get first 2 characters of first name
+SELECT fname,
+       LEFT(fname, 2) AS first_two_letters
+FROM employees;
+
+
+-- 5. RIGHT : Get last 2 characters of last name
+SELECT lname,
+       RIGHT(lname, 2) AS last_two_letters
+FROM employees;
+
+
+-- 5.5. RIGHT : Get MIDDLE characters of last name
+SELECT lname,
+       RIGHT(lname, 2) AS last_two_letters
+FROM employees;
+
+-- Get middle character(s) for all names
+-- 1 char for odd length
+-- 2 chars for even length
+
+SELECT fname,
+       CASE
+           WHEN LENGTH(fname) % 2 = 1
+           THEN SUBSTR(fname, (LENGTH(fname) + 1) / 2, 1)
+           ELSE SUBSTR(fname, (LENGTH(fname) / 2), 2)
+       END AS middle_character
+FROM employees;
+
+
+
+
+
+-- 6. LENGTH : Get length of first name
+SELECT fname,
+       LENGTH(fname) AS name_length
+FROM employees;
+
+
+-- 7. UPPER : Convert first name to uppercase
+SELECT UPPER(fname) AS upper_name
+FROM employees;
+
+
+-- 8. LOWER : Convert email to lowercase
+SELECT LOWER(email) AS lower_email
+FROM employees;
+
+
+-- 9. TRIM : Remove extra spaces (demo example)
+SELECT TRIM('   yash mishra   ') AS trimmed_text;
+
+
+-- 10. REPLACE : Change email domain
+SELECT email,
+       REPLACE(email, 'example.com', 'company.com') AS updated_email
+FROM employees;
+
+
+-- 11. POSITION : Find position of '@' in email
+SELECT email,
+       POSITION('@' IN email) AS at_position
+FROM employees;
+
+
+-- 12. SUBSTR + POSITION : Extract email domain
+SELECT email,
+       SUBSTR(email, POSITION('@' IN email) + 1) AS email_domain
+FROM employees;
+
+
+-- 13. STRING_AGG : Group employee names by department
+SELECT dept,
+       STRING_AGG(fname, ', ') AS employee_names
+FROM employees
+GROUP BY dept;
+
+
+-- 14. Full name in UPPERCASE
+SELECT UPPER(CONCAT(fname, ' ', lname)) AS full_name_upper
+FROM employees;
+
+
+-- 15. Employees whose first name length > 4
+SELECT fname
+FROM employees
+WHERE LENGTH(fname) > 4;
+
+
+-- 16. First name starts with same letter as last name
+SELECT fname, lname
+FROM employees
+WHERE LEFT(fname, 1) = LEFT(lname, 1);
+
+
+-- 17. Extract first letter of first name and last name
+SELECT fname, lname,
+       LEFT(fname, 1) AS fname_initial,
+       LEFT(lname, 1) AS lname_initial
+FROM employees;
+
+
+-- 18. Email username (before @)
+SELECT email,
+       SUBSTR(email, 1, POSITION('@' IN email) - 1) AS email_username
+FROM employees;
+
+
+
+
+-- SOME PRACTICE QUESTIONS 
+
+-- DISTINCT removes duplicate department names
+-- Shows all unique departments present in employees table
+
+SELECT DISTINCT dept
+FROM employees;
+
+-- ORDER BY salary DESC sorts salary from highest to lowest
+
+SELECT *
+FROM employees
+ORDER BY salary DESC;
+
+
+-- LIMIT restricts number of rows returned
+-- ORDER BY salary DESC ensures top salaries come first
+
+SELECT *
+FROM employees
+ORDER BY salary DESC
+LIMIT 3;
+
+
+
+-- LIKE 'A%' means:
+-- 'A' at the start, followed by any characters
+
+SELECT *
+FROM employees
+WHERE fname LIKE 'A%';
+
+-- CASE INSESITIVE
+SELECT *
+FROM employees
+WHERE fname ILIKE 'a%';
+
+-- LENGTH() counts number of characters in lname
+-- Only rows with exactly 4 characters are returned
+
+SELECT *
+FROM employees
+WHERE LENGTH(lname) = 4;
+
+
+
+-- REVERSE() reverses characters in a string
+
+SELECT fname,
+       REVERSE(fname) AS reversed_fname
+FROM employees;
+
+
 
 -- ======================================
 -- FINAL CHECK
