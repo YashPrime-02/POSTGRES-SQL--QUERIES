@@ -958,6 +958,603 @@ FROM employees;
 
 
 
+
+-- ======================================
+-- ALTER TABLE QUERIES
+-- ======================================
+
+
+-- Add a new column called phone_number
+-- VARCHAR because phone numbers are not used in calculations
+SELECT * FROM employees
+
+ALTER TABLE employees
+ADD COLUMN phone_number VARCHAR(15);
+
+
+-- Remove default value from salary column
+
+ALTER TABLE employees
+ALTER COLUMN salary DROP DEFAULT;
+
+
+
+--- Drop the phone_number column
+ALTER TABLE employees
+DROP COLUMN phone_number;
+
+
+
+-- Add column 'status' with default value
+-- Existing rows will get 'ACTIVE'
+
+ALTER TABLE employees
+ADD COLUMN status VARCHAR(10) DEFAULT 'ACTIVE';
+
+-- Verify
+SELECT emp_id, fname, status FROM employees;
+
+
+
+
+-- Rename column 'dept' to 'department'
+-- Common refactor in real projects
+
+ALTER TABLE employees
+RENAME COLUMN dept TO department;
+
+-- Verify
+SELECT emp_id, fname, department FROM employees;
+
+
+-- Change salary from INT to BIGINT
+-- Useful when salary values may grow large
+
+ALTER TABLE employees
+ALTER COLUMN salary TYPE BIGINT;
+
+-- Verify
+SELECT salary FROM employees;
+
+-- Change default salary to 35000 for future inserts
+
+ALTER TABLE employees
+ALTER COLUMN salary SET DEFAULT 35000;
+
+
+-- Remove default value from salary column
+
+ALTER TABLE employees
+ALTER COLUMN salary DROP DEFAULT;
+
+
+
+-- Add CHECK constraint to ensure salary is Positive
+
+ALTER TABLE employees
+ADD CONSTRAINT salary_positive CHECK (salary > 0);
+
+-- Remove CHECK constraint
+-- Constraint name must match exactly
+
+ALTER TABLE employees
+DROP CONSTRAINT salary_positive;
+
+
+-- Add MOBILE_NUMBER column with CHECK constraint
+-- Ensures mobile number is exactly 10 characters long
+ALTER TABLE employees
+ADD COLUMN MOBILE_NUMBER VARCHAR(15) CHECK (LENGTH(MOBILE_NUMBER) = 10);
+
+SELECT * FROM employees
+
+
+-- Update existing rows to have a default mobile number
+
+-- 1. Add column first (already done)
+-- 2. Update existing rows
+UPDATE employees
+SET mobile_number = '9999999999'
+WHERE mobile_number IS NULL;
+
+-- 3. Enforce NOT NULL
+ALTER TABLE employees
+ALTER COLUMN mobile_number SET NOT NULL;
+
+
+
+-- CASE STATEMENT EXAMPLES
+SELECT fname, salary,
+
+CASE 
+    WHEN salary >=50000 THEN 'High'
+	WHEN salary >=40000 THEN 'Mid'
+	WHEN salary IN (30000,39999) THEN ' Lower Mid'
+	ELSE 'Low'
+END AS Salary_Category
+FROM employees;
+
+--CASE BONUS CALCULATION
+SELECT fname, salary,
+
+CASE 
+    WHEN salary >=50000 THEN salary * 0.10
+    WHEN salary >=40000 THEN salary * 0.07
+    WHEN salary IN (30000,39999) THEN salary * 0.05
+    ELSE 0
+END AS Bonus_Amount
+FROM employees;
+
+
+-- Categorize employees into bonus groups
+-- and count how many employees fall into each group
+
+SELECT
+    CASE
+        WHEN salary >= 50000 THEN 'High'
+        WHEN salary >= 40000 THEN 'Mid'
+        ELSE 'Low'
+    END AS Salary_Category, COUNT(emp_id) AS employee_count
+FROM employees
+GROUP BY Salary_Category;
+
+
+
+-- Categorize employees based on experience (joining year)
+
+SELECT fname, hire_date,
+CASE
+    WHEN hire_date <= '2019-12-31' THEN 'Senior'
+    WHEN hire_date <= '2021-12-31' THEN 'Mid Level'
+    ELSE 'Junior'
+END AS experience_level
+FROM employees;
+
+
+
+
+------------------------------------------------------------------------
+
+-- FOREIGN KEYS EXAMPLE
+
+-- Parent table
+-- Stores customer details
+-- cust_id uniquely identifies each customer
+
+CREATE TABLE customers (
+    cust_id SERIAL PRIMARY KEY,
+    cust_name VARCHAR(100) NOT NULL
+);
+
+-- Child table
+-- Child table
+-- Each order is linked to a customer using cust_id
+
+CREATE TABLE orders (
+    ord_id SERIAL PRIMARY KEY,
+    ord_date DATE NOT NULL,
+    price NUMERIC NOT NULL,
+    cust_id INTEGER NOT NULL,
+
+    -- FOREIGN KEY enforces relationship
+    FOREIGN KEY (cust_id)
+    REFERENCES customers (cust_id)
+);
+
+
+
+-- Insert customers (parent table first)
+
+INSERT INTO customers (cust_name)
+VALUES
+('Yash'),
+('Priya'),
+('Arjun');
+
+
+-- Insert orders (child table)
+-- Insert orders
+-- cust_id must already exist in customers table
+
+INSERT INTO orders (ord_date, price, cust_id)
+VALUES
+('2024-01-10', 1500, 1),
+('2024-01-12', 2500, 1),
+('2024-01-15', 1800, 2),
+('2024-01-20', 3200, 3);
+
+
+
+-- ======================================
+-- CROSS JOIN (Cartesian Product)
+-- ======================================
+
+-- CROSS JOIN combines EVERY row from customers
+-- with EVERY row from orders
+-- Number of rows = customers_count × orders_count
+-- ⚠️ Very dangerous on large tables
+
+SELECT *
+FROM customers
+CROSS JOIN orders;
+
+-- Example:
+-- If customers = 3 rows
+-- and orders = 4 rows
+-- result = 12 rows
+
+-- Use case:
+-- Rarely used
+-- Mainly for testing, matrix-like data, or demo purposes
+
+
+-- ======================================
+-- INNER JOIN (Join by Common Column)
+-- ======================================
+
+-- INNER JOIN returns ONLY matching records
+-- Rows appear only when cust_id exists in BOTH tables
+
+SELECT *
+FROM customers cust
+INNER JOIN orders ord
+ON cust.cust_id = ord.cust_id;
+
+-- Explanation:
+-- cust and ord are table aliases (short names)
+-- cust.cust_id = ord.cust_id is the join condition
+-- If a customer has NO orders → they will NOT appear
+
+-- Most commonly used JOIN in real projects
+
+
+-- inner join with GROUP BY (though not typical here)
+SELECT cust.cust_name, COUNT (ord.ord_id)
+FROM customers cust
+INNER JOIN orders ord
+ON cust.cust_id = ord.cust_id
+GROUP BY cust.cust_name;
+
+
+
+-- inner join with GROUP BY (though not typical here)
+SELECT cust.cust_name, SUM (ord.price)
+FROM customers cust
+INNER JOIN orders ord
+ON cust.cust_id = ord.cust_id
+GROUP BY cust.cust_name;
+
+
+--LEFT JOIN
+
+SELECT * FROM customers 
+cust LEFT JOIN orders ord 
+ON cust.cust_id =ord.cust_id;
+
+--RIGHT JOIN
+SELECT * FROM customers 
+cust RIGHT JOIN orders ord 
+ON cust.cust_id =ord.cust_id;
+
+
+
+
+-- MANY ONE JOIN 
+-- ======================================
+-- INSERT DATA INTO STUDENTS TABLE
+-- ======================================
+-- Adds student records
+-- s_id is auto-generated (SERIAL)
+
+INSERT INTO students(name) VALUES
+('YASH'),
+('DIVYANSHU'),
+('ALEX');
+
+
+-- ======================================
+-- INSERT DATA INTO COURSES TABLE
+-- ======================================
+-- Adds courses with their fees
+-- fee represents course price
+
+INSERT INTO courses(name, fee) 
+VALUES
+('Maths', 500),
+('Physics', 600),
+('English', 700);
+
+
+-- ======================================
+-- INSERT DATA INTO ENROLLMENT TABLE
+-- ======================================
+-- Links students to courses
+-- enrollment_date shows when student joined course
+
+INSERT INTO enrollment (s_id, c_id, enrollment_date)
+VALUES
+(1, 1, '2024-01-01'),
+(1, 2, '2024-01-15'),
+(2, 1, '2024-02-01'),
+(2, 3, '2024-02-15'),
+(3, 3, '2024-03-25');
+
+
+-- ======================================
+-- VIEW RAW TABLE DATA (DEBUG / ADMIN)
+-- ======================================
+
+-- View all students
+SELECT * FROM students;
+
+-- View all courses
+SELECT * FROM courses;
+
+-- View all enrollments
+SELECT * FROM enrollment;
+
+
+-- ======================================
+-- STUDENT + COURSE DETAILS (JOIN QUERY)
+-- ======================================
+-- Shows which student enrolled in which course
+-- Includes course fee and enrollment date
+
+SELECT 
+    s.name AS student_name,
+    c.name AS course_name,
+    c.fee,
+    e.enrollment_date
+FROM enrollment e
+JOIN students s ON e.s_id = s.s_id
+JOIN courses c ON c.c_id = e.c_id;
+
+
+-- ======================================
+-- COURSES TAKEN BY A SPECIFIC STUDENT
+-- ======================================
+-- Used in student profile page
+-- Here: student with s_id = 1
+
+SELECT 
+    c.name AS course_name,
+    c.fee,
+    e.enrollment_date
+FROM enrollment e
+JOIN courses c ON e.c_id = c.c_id
+WHERE e.s_id = 1;
+
+
+-- ======================================
+-- STUDENTS ENROLLED IN A SPECIFIC COURSE
+-- ======================================
+-- Used in course detail / admin view
+-- Here: course with c_id = 1
+
+SELECT 
+    s.name AS student_name,
+    e.enrollment_date
+FROM enrollment e
+JOIN students s ON e.s_id = s.s_id
+WHERE e.c_id = 1;
+
+
+-- ======================================
+-- COUNT STUDENTS PER COURSE
+-- ======================================
+-- LEFT JOIN ensures courses with ZERO enrollments are shown
+
+SELECT 
+    c.name AS course_name,
+    COUNT(e.s_id) AS total_students
+FROM courses c
+LEFT JOIN enrollment e ON c.c_id = e.c_id
+GROUP BY c.name;
+
+
+-- ======================================
+-- TOTAL REVENUE PER COURSE
+-- ======================================
+-- Calculates how much money each course earned
+
+SELECT 
+    c.name AS course_name,
+    SUM(c.fee) AS total_revenue
+FROM enrollment e
+JOIN courses c ON e.c_id = c.c_id
+GROUP BY c.name;
+
+
+-- ======================================
+-- TOTAL COURSES PER STUDENT
+-- ======================================
+-- Shows how many courses each student enrolled in
+-- LEFT JOIN keeps students with zero courses
+
+SELECT 
+    s.name AS student_name,
+    COUNT(e.c_id) AS total_courses
+FROM students s
+LEFT JOIN enrollment e ON s.s_id = e.s_id
+GROUP BY s.name;
+
+
+-- ======================================
+-- STUDENTS WITH NO ENROLLMENTS
+-- ======================================
+-- Finds students who are not enrolled in any course
+
+SELECT s.name
+FROM students s
+LEFT JOIN enrollment e ON s.s_id = e.s_id
+WHERE e.s_id IS NULL;
+
+
+-- ======================================
+-- LATEST ENROLLMENTS (ACTIVITY FEED)
+-- ======================================
+-- Shows recent student enrollments
+-- Used for dashboards / activity logs
+
+SELECT 
+    s.name AS student_name,
+    c.name AS course_name,
+    e.enrollment_date
+FROM enrollment e
+JOIN students s ON e.s_id = s.s_id
+JOIN courses c ON e.c_id = c.c_id
+ORDER BY e.enrollment_date DESC
+LIMIT 5;
+
+
+-- PROJECT E STORE 
+
+-- =====================================================
+-- CUSTOMERS TABLE
+-- =====================================================
+-- This table stores customer information
+-- One customer can place MANY orders (one-to-many)
+
+CREATE TABLE customers (
+    cust_id SERIAL PRIMARY KEY,      -- Auto-increment unique ID for each customer
+    cust_name VARCHAR(100) NOT NULL  -- Customer name, cannot be empty
+);
+
+
+
+-- =====================================================
+-- ORDERS TABLE
+-- =====================================================
+-- This table stores orders placed by customers
+-- Each order belongs to ONE customer
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,                 -- Unique order ID
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE, -- If date not provided, today’s date is used
+    cust_id INT NOT NULL,                        -- Stores which customer placed the order
+
+    -- Foreign key ensures cust_id must exist in customers table
+    FOREIGN KEY (cust_id)
+    REFERENCES customers (cust_id)
+);
+
+
+
+-- =====================================================
+-- PRODUCTS TABLE
+-- =====================================================
+-- This table stores products available in the shop
+-- Price of product is stored here
+
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,       -- Unique product ID
+    product_name VARCHAR(100) NOT NULL,  -- Product name
+    price NUMERIC(10,2) NOT NULL          -- Product price (money value)
+);
+
+
+
+-- =====================================================
+-- ORDER_ITEMS TABLE (JUNCTION TABLE)
+-- =====================================================
+-- This table connects orders and products
+-- Handles MANY-TO-MANY relationship
+-- Also stores quantity of each product in an order
+
+CREATE TABLE order_items (
+    order_item_id SERIAL PRIMARY KEY, -- Unique row ID
+    order_id INT NOT NULL,             -- References an order
+    product_id INT NOT NULL,           -- References a product
+    quantity INT NOT NULL CHECK (quantity > 0), -- Quantity must be greater than 0
+
+    -- Ensures order exists
+    FOREIGN KEY (order_id)
+    REFERENCES orders (order_id),
+
+    -- Ensures product exists
+    FOREIGN KEY (product_id)
+    REFERENCES products (product_id)
+);
+
+
+
+-- =====================================================
+-- INSERT DATA INTO CUSTOMERS
+-- =====================================================
+-- Adds customers into the system
+
+INSERT INTO customers (cust_name)
+VALUES ('Yash'), ('Priya');
+
+
+
+-- =====================================================
+-- INSERT DATA INTO PRODUCTS
+-- =====================================================
+-- Adds products with prices
+
+INSERT INTO products (product_name, price)
+VALUES
+('Laptop', 55000),
+('Mouse', 500),
+('Keyboard', 1500);
+
+
+
+-- =====================================================
+-- INSERT DATA INTO ORDERS
+-- =====================================================
+-- Creates orders for customers
+-- cust_id links order to customer
+
+INSERT INTO orders (cust_id)
+VALUES (1), (1), (2);
+
+
+
+-- =====================================================
+-- INSERT DATA INTO ORDER_ITEMS
+-- =====================================================
+-- Links products to orders with quantity
+
+INSERT INTO order_items (order_id, product_id, quantity)
+VALUES
+(1, 1, 1),   -- Order 1 → Laptop x1
+(1, 2, 2),   -- Order 1 → Mouse x2
+(2, 3, 1),   -- Order 2 → Keyboard x1
+(3, 2, 1);   -- Order 3 → Mouse x1
+
+
+
+-- =====================================================
+-- FINAL DISPLAY QUERY
+-- =====================================================
+-- Shows:
+-- Customer name
+-- Order ID and order date
+-- Product name, price, quantity
+-- Total price per product (price * quantity)
+
+SELECT
+    c.cust_name,
+    o.order_id,
+    o.order_date,
+    p.product_name,
+    p.price,
+    oi.quantity,
+    (p.price * oi.quantity) AS item_total
+FROM customers c
+JOIN orders o
+    ON c.cust_id = o.cust_id
+JOIN order_items oi
+    ON o.order_id = oi.order_id
+JOIN products p
+    ON oi.product_id = p.product_id
+ORDER BY o.order_id;
+-- This query joins all four tables to get complete order details
+
+
+
 -- ======================================
 -- FINAL CHECK
 -- ======================================
